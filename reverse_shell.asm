@@ -1,3 +1,6 @@
+; version 0.1
+; 01/02/2022
+
 section .text
 	global _start
 
